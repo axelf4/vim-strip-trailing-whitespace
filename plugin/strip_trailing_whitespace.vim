@@ -107,11 +107,11 @@ function s:Remove(key) abort
 
 	if b:root.left is s:null
 		let b:root = b:root.right
-		let b:root.key += a:key
+		if b:root isnot s:null | let b:root.key += a:key | endif
 	else
 		let x = b:root.right
 		let b:root = b:root.left
-		let x.key -= b:root.key
+		if x isnot s:null | let x.key -= b:root.key | endif
 		call s:Splay(b:root, a:key)
 		let b:root.key += a:key
 		let b:root.right = x
