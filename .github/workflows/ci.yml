@@ -1,0 +1,15 @@
+name: CI
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install Vim
+      run: sudo add-apt-repository -yu ppa:jonathonf/vim && sudo apt-get install -qq vim
+    - name: Run tests
+      run: make check
