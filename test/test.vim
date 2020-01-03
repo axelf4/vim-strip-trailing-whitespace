@@ -5,7 +5,6 @@ function s:TestEdits(original, EditCb, expected) abort
 	call a:EditCb()
 	silent write
 	call assert_equal(a:expected, readfile(fname))
-	%bwipeout!
 endfunction
 
 function Test_OneLineUnchanged() abort
