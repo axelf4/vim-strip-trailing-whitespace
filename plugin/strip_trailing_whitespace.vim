@@ -172,7 +172,7 @@ function s:Listener(bufnr, start, end, added, changes) abort
 	" Adjust line numbers
 	let b:root = s:Splay(b:root, a:start)
 	if b:root isnot s:null
-		if b:root.key > a:start
+		if b:root.key >= a:start
 			let b:root.key += a:added
 			if b:root.left isnot s:null | let b:root.left.key -= a:added | endif
 		elseif b:root.right isnot s:null

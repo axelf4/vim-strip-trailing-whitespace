@@ -1,20 +1,29 @@
-function Test_OneLineUnchanged() abort
+function s:TestEdits(original, EditCb, expected) abort
 	let fname = tempname()
-	let contents = ['line1 ']
-	call writefile(contents, fname)
+	call writefile(a:original, fname)
 	silent execute 'edit' fname
+	call a:EditCb()
 	silent write
-	call assert_equal(['line1 '], readfile(fname))
+	call assert_equal(a:expected, readfile(fname))
 	%bwipeout!
 endfunction
 
+function Test_OneLineUnchanged() abort
+	function! s:EditCb() abort
+	endfunction
+	call s:TestEdits(['foo '], function('s:EditCb'), ['foo '])
+endfunction
+
 function Test_OneLineChanged() abort
-	let fname = tempname()
-	let contents = ['line1 ']
-	call writefile(contents, fname)
-	silent execute 'edit' fname
-	normal! rf
-	silent write
-	call assert_equal(['fine1'], readfile(fname))
-	%bwipeout!
+	function! s:EditCb() abort
+		normal! rf
+	endfunction
+	call s:TestEdits(['line1 '], function('s:EditCb'), ['fine1'])
+endfunction
+
+function Test_AddLineAboveChange() abort
+	function! s:EditCb() abort
+		normal! rzO
+	endfunction
+	call s:TestEdits(['foo '], function('s:EditCb'), ['', 'zoo'])
 endfunction
