@@ -1,7 +1,7 @@
 function s:TestEdits(original, EditCb, expected) abort
 	let fname = tempname()
 	call writefile(a:original, fname)
-	silent execute 'edit' fname
+	silent execute 'edit!' fname
 	call a:EditCb()
 	silent write
 	call assert_equal(a:expected, readfile(fname))

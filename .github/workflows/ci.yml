@@ -25,4 +25,3 @@ jobs:
         esac
     - name: Run tests
       run: make check VIM=${{ matrix.vim }}
-      continue-on-error: ${{ matrix.vim == 'nvim' }}

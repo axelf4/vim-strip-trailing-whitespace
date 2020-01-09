@@ -8,7 +8,7 @@ try
 	for s:testfile in s:testfiles
 		execute 'source' s:testfile
 
-		let s:tests = execute('function /^Test_')->split("\n")->map({_, v -> v->matchstr('function \zs\k\+\ze()')})
+		let s:tests = map(split(execute('function /^Test_'), "\n"), {_, v -> matchstr(v, 'function \zs\k\+\ze()')})
 		for s:test_function in s:tests
 			let v:errors = []
 			try

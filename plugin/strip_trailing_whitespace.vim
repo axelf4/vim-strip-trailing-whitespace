@@ -1,5 +1,5 @@
 " Vim plugin that removes trailing whitespace from modified lines on save
-scriptversion 4
+let s:save_cpo = &cpo | set cpo&vim
 
 " Strip trailing whitespace
 command -bar -range=% StripTrailingWhitespace keeppatterns <line1>,<line2>substitute/\s\+$//e
@@ -74,7 +74,7 @@ endfunction
 function s:Put(key) abort
 	if b:root is s:null
 		" Splay key to root
-		let b:root = #{key: a:key, left: s:null, right: s:null}
+		let b:root = {'key': a:key, 'left': s:null, 'right': s:null}
 		return
 	endif
 
@@ -83,13 +83,13 @@ function s:Put(key) abort
 	" Insert new node at root
 	let cmp = a:key - b:root.key
 	if cmp < 0
-		let n = #{key: a:key, left: b:root.left, right: b:root}
+		let n = {'key': a:key, 'left': b:root.left, 'right': b:root}
 		let b:root.left = s:null
 		if n.left isnot s:null | let n.left.key += b:root.key - n.key | endif
 		let n.right.key -= n.key
 		let b:root = n
 	elseif cmp > 0
-		let n = #{key: a:key, left: b:root, right: b:root.right}
+		let n = {'key': a:key, 'left': b:root, 'right': b:root.right}
 		let b:root.right = s:null
 		if n.right isnot s:null | let n.right.key += b:root.key - n.key | endif
 		let n.left.key -= n.key
@@ -161,7 +161,7 @@ endfunction
 " Ignore changes while that is the case.
 let s:is_stripping = 0
 
-function s:Listener(bufnr, start, end, added, changes) abort
+function StripTrailingWhitespaceListener(bufnr, start, end, added, changes) abort
 	if s:is_stripping | return | endif
 
 	" Remove existing in range
@@ -193,7 +193,14 @@ function s:OnBufEnter() abort
 	if exists('b:root') | return | endif
 
 	let b:root = s:null
-	call listener_add(function('s:Listener'))
+	if has('nvim')
+		lua vim.api.nvim_buf_attach(0, false, {
+					\ on_lines = function(_, bufnr, _, firstline, lastline, new_lastline)
+					\ vim.api.nvim_call_function("StripTrailingWhitespaceListener", {bufnr, firstline + 1, lastline + 1, new_lastline - lastline, {}})
+					\ end, })
+	else
+		call listener_add('StripTrailingWhitespaceListener')
+	endif
 endfunction
 
 " Recursively strips lines in the specified tree.
@@ -205,7 +212,7 @@ function s:StripTree(n, offset) abort
 endfunction
 
 function s:OnWrite() abort
-	call listener_flush()
+	if !has('nvim') | call listener_flush() | endif
 
 	let s:is_stripping = 1
 	let save_cursor = getcurpos()
@@ -223,3 +230,5 @@ augroup strip_trailing_whitespace
 	autocmd BufEnter * call s:OnBufEnter()
 	autocmd BufWritePre * call s:OnWrite()
 augroup END
+
+let &cpo = s:save_cpo | unlet s:save_cpo
