@@ -1,6 +1,14 @@
+VIM = vim
+
+ifeq ($(VIM),vim)
+	args = --not-a-term
+else ifeq ($(VIM),nvim)
+	args = --headless
+endif
+
 all: check
 
 check:
-	vim --clean --not-a-term -u runtest.vim
+	$(VIM) --clean $(args) -u runtest.vim
 
 .PHONY: all check

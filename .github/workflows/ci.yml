@@ -7,9 +7,22 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        vim: [vim, nvim]
+
     steps:
     - uses: actions/checkout@v1
     - name: Install Vim
-      run: sudo add-apt-repository -yu ppa:jonathonf/vim && sudo apt-get install -qq vim
+      run: |
+        case ${{ matrix.vim }} in
+          vim)
+            sudo add-apt-repository -yu ppa:jonathonf/vim && sudo apt-get install -qq vim
+            ;;
+          nvim)
+            curl -L https://github.com/neovim/neovim/releases/latest/download/nvim-linux64.tar.gz | tar xz && echo "::add-path::$PWD/nvim-linux64/bin"
+            ;;
+        esac
     - name: Run tests
-      run: make check
+      run: make check VIM=${{ matrix.vim }}
+      continue-on-error: ${{ matrix.vim == 'nvim' }}
