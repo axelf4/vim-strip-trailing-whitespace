@@ -1,6 +1,12 @@
 " Vim plugin that removes trailing whitespace from modified lines on save
 let s:save_cpo = &cpo | set cpo&vim
 
+" Only load the plugin once
+if exists('g:loaded_strip_trailing_whitespace')
+    finish
+endif
+let g:loaded_strip_trailing_whitespace = 1
+
 " Strip trailing whitespace
 command -bar -range=% StripTrailingWhitespace keeppatterns <line1>,<line2>substitute/\s\+$//e
 
