@@ -218,6 +218,8 @@ function s:StripTree(n, offset) abort
 endfunction
 
 function s:OnWrite() abort
+	if !get(b:, 'strip_trailing_whitespace_enabled', 1) | return | endif
+
 	if !has('nvim') | call listener_flush() | endif
 
 	let s:is_stripping = 1
@@ -235,6 +237,12 @@ augroup strip_trailing_whitespace
 	autocmd!
 	autocmd BufEnter * call s:OnBufEnter()
 	autocmd BufWritePre * call s:OnWrite()
+augroup END
+
+augroup strip_trailing_whitespace_filetype
+	autocmd!
+	autocmd FileType * let b:strip_trailing_whitespace_enabled = index(['diff', 'markdown'],
+				\ &filetype) == -1
 augroup END
 
 let &cpo = s:save_cpo | unlet s:save_cpo
