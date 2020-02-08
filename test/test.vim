@@ -2,7 +2,7 @@ function s:TestEdits(original, EditCb, expected) abort
 	let fname = tempname()
 	call writefile(a:original, fname)
 	silent execute 'edit!' fname
-	call a:EditCb()
+	silent call a:EditCb()
 	silent write
 	call assert_equal(a:expected, readfile(fname))
 endfunction
@@ -50,4 +50,11 @@ function Test_DisabledForMarkdown() abort
 		normal! rf
 	endfunction
 	call s:TestEdits(['line '], function('s:EditCb'), ['fine '])
+endfunction
+
+function Test_HandleManyLinesWithTWS() abort
+	function! s:EditCb() abort
+		execute 'normal! 100o '
+	endfunction
+	call s:TestEdits(['line '], function('s:EditCb'), extend(['line'], repeat([''], 100)))
 endfunction
