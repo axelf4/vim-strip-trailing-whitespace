@@ -78,49 +78,49 @@ function s:Splay(n, key) abort
 endfunction
 
 function s:Put(key) abort
-	if b:root is s:null
+	if b:stw_root is s:null
 		" Splay key to root
-		let b:root = {'key': a:key, 'left': s:null, 'right': s:null}
+		let b:stw_root = {'key': a:key, 'left': s:null, 'right': s:null}
 		return
 	endif
 
-	let b:root = s:Splay(b:root, a:key)
+	let b:stw_root = s:Splay(b:stw_root, a:key)
 
 	" Insert new node at root
-	let cmp = a:key - b:root.key
+	let cmp = a:key - b:stw_root.key
 	if cmp < 0
-		let n = {'key': a:key, 'left': b:root.left, 'right': b:root}
-		let b:root.left = s:null
-		if n.left isnot s:null | let n.left.key += b:root.key - n.key | endif
+		let n = {'key': a:key, 'left': b:stw_root.left, 'right': b:stw_root}
+		let b:stw_root.left = s:null
+		if n.left isnot s:null | let n.left.key += b:stw_root.key - n.key | endif
 		let n.right.key -= n.key
-		let b:root = n
+		let b:stw_root = n
 	elseif cmp > 0
-		let n = {'key': a:key, 'left': b:root, 'right': b:root.right}
-		let b:root.right = s:null
-		if n.right isnot s:null | let n.right.key += b:root.key - n.key | endif
+		let n = {'key': a:key, 'left': b:stw_root, 'right': b:stw_root.right}
+		let b:stw_root.right = s:null
+		if n.right isnot s:null | let n.right.key += b:stw_root.key - n.key | endif
 		let n.left.key -= n.key
-		let b:root = n
+		let b:stw_root = n
 	else
 		" Duplicate key
 	endif
 endfunction
 
 function s:Remove(key) abort
-	if b:root is s:null | return | endif " Empty tree
-	let b:root = s:Splay(b:root, a:key)
+	if b:stw_root is s:null | return | endif " Empty tree
+	let b:stw_root = s:Splay(b:stw_root, a:key)
 	" Check if key was in the tree
-	if a:key != b:root.key | return | endif
+	if a:key != b:stw_root.key | return | endif
 
-	if b:root.left is s:null
-		let b:root = b:root.right
-		if b:root isnot s:null | let b:root.key += a:key | endif
+	if b:stw_root.left is s:null
+		let b:stw_root = b:stw_root.right
+		if b:stw_root isnot s:null | let b:stw_root.key += a:key | endif
 	else
-		let x = b:root.right
-		let b:root = b:root.left
-		if x isnot s:null | let x.key -= b:root.key | endif
-		call s:Splay(b:root, a:key)
-		let b:root.key += a:key
-		let b:root.right = x
+		let x = b:stw_root.right
+		let b:stw_root = b:stw_root.left
+		if x isnot s:null | let x.key -= b:stw_root.key | endif
+		call s:Splay(b:stw_root, a:key)
+		let b:stw_root.key += a:key
+		let b:stw_root.right = x
 	endif
 endfunction
 
@@ -128,35 +128,35 @@ endfunction
 "
 " {min} and {max} are inclusive line numbers defining the range to delete
 function s:RemoveRange(min, max) abort
-	if b:root is s:null | return | endif
-	let b:root = s:Splay(b:root, a:min)
+	if b:stw_root is s:null | return | endif
+	let b:stw_root = s:Splay(b:stw_root, a:min)
 
-	if b:root.right is s:null
-		if b:root.key >= a:min && b:root.key <= a:max
-			if b:root.left isnot s:null | let b:root.left.key += b:root.key | endif
-			let b:root = b:root.left
+	if b:stw_root.right is s:null
+		if b:stw_root.key >= a:min && b:stw_root.key <= a:max
+			if b:stw_root.left isnot s:null | let b:stw_root.left.key += b:stw_root.key | endif
+			let b:stw_root = b:stw_root.left
 		endif
 	else
 		" Do modified Hibbard deletion
-		if b:root.key >= a:min && b:root.key <= a:max " Should remove root node but keep left subtree
-			let rootkey = b:root.key
-			let x = b:root.left
-			let b:root = s:Splay(b:root.right, a:max - rootkey + 1)
-			let b:root.left = x
+		if b:stw_root.key >= a:min && b:stw_root.key <= a:max " Should remove root node but keep left subtree
+			let rootkey = b:stw_root.key
+			let x = b:stw_root.left
+			let b:stw_root = s:Splay(b:stw_root.right, a:max - rootkey + 1)
+			let b:stw_root.left = x
 
-			if x isnot s:null | let x.key -= b:root.key | endif
-			let b:root.key += rootkey
+			if x isnot s:null | let x.key -= b:stw_root.key | endif
+			let b:stw_root.key += rootkey
 
 			call s:Remove(a:max) " Root could still be less than max
 		else " Should keep root node and left subtree
-			let b:root.right = s:Splay(b:root.right, a:max - b:root.key + 1)
-			if b:root.right.key < a:max
-				let b:root.right.left = s:null
+			let b:stw_root.right = s:Splay(b:stw_root.right, a:max - b:stw_root.key + 1)
+			if b:stw_root.right.key < a:max
+				let b:stw_root.right.left = s:null
 			else
-				if b:root.right.right isnot s:null
-					let b:root.right.right.key += b:root.right.key
+				if b:stw_root.right.right isnot s:null
+					let b:stw_root.right.right.key += b:stw_root.right.key
 				endif
-				let b:root.right = b:root.right.right
+				let b:stw_root.right = b:stw_root.right.right
 			endif
 		endif
 	endif
@@ -176,13 +176,13 @@ function StripTrailingWhitespaceListener(bufnr, start, end, added, changes) abor
 	endif
 
 	" Adjust line numbers
-	let b:root = s:Splay(b:root, a:start)
-	if b:root isnot s:null
-		if b:root.key >= a:start
-			let b:root.key += a:added
-			if b:root.left isnot s:null | let b:root.left.key -= a:added | endif
-		elseif b:root.right isnot s:null
-			let b:root.right.key += a:added
+	let b:stw_root = s:Splay(b:stw_root, a:start)
+	if b:stw_root isnot s:null
+		if b:stw_root.key >= a:start
+			let b:stw_root.key += a:added
+			if b:stw_root.left isnot s:null | let b:stw_root.left.key -= a:added | endif
+		elseif b:stw_root.right isnot s:null
+			let b:stw_root.right.key += a:added
 		endif
 	endif
 
@@ -196,9 +196,9 @@ function StripTrailingWhitespaceListener(bufnr, start, end, added, changes) abor
 endfunction
 
 function s:OnBufEnter() abort
-	if exists('b:root') | return | endif
+	if exists('b:stw_root') | return | endif
 
-	let b:root = s:null
+	let b:stw_root = s:null
 	if has('nvim')
 		lua vim.api.nvim_buf_attach(0, false, {
 					\ on_lines = function(_, bufnr, _, firstline, lastline, new_lastline)
@@ -225,11 +225,11 @@ function s:OnWrite() abort
 	let s:is_stripping = 1
 	let save_cursor = getcurpos()
 	try
-		if b:root isnot s:null | call s:StripTree(b:root, 0) | endif
+		if b:stw_root isnot s:null | call s:StripTree(b:stw_root, 0) | endif
 	finally
 		call setpos('.', save_cursor)
 		let s:is_stripping = 0
-		let b:root = s:null
+		let b:stw_root = s:null
 	endtry
 endfunction
 

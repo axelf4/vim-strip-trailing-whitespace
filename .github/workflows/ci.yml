@@ -1,6 +1,6 @@
 name: CI
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
   build:
@@ -12,7 +12,7 @@ jobs:
         vim: [vim, nvim]
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
     - name: Install Vim
       run: |
         case ${{ matrix.vim }} in
