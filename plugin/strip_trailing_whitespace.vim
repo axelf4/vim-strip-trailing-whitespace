@@ -204,7 +204,7 @@ function StripTrailingWhitespaceListener(bufnr, start, end, added, changes) abor
 	endif
 
 	" (Re-)Add lines in range with trailing whitespace
-	for lnum in range(a:start, a:end - 1)
+	for lnum in range(a:start, a:end + a:added - 1)
 		let has_trailing_ws = getline(lnum) =~# '\s$'
 		if has_trailing_ws
 			call s:Put(lnum)

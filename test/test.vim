@@ -27,6 +27,13 @@ function Test_AddLineAboveChange() abort
 	call s:TestEdits(['foo '], function('s:EditCb'), ['', 'zoo'])
 endfunction
 
+function Test_DeleteAndPut() abort
+	function! s:EditCb() abort
+		normal! j2ddP
+	endfunction
+	call s:TestEdits(['first ', 'second ', 'third ', 'forth '], function('s:EditCb'), ['first ', 'second', 'third', 'forth '])
+endfunction
+
 function Test_AbleToDisable() abort
 	function! s:EditCb() abort
 		let b:strip_trailing_whitespace_enabled = 0
