@@ -27,6 +27,15 @@ function Test_AddLineAboveChange() abort
 	call s:TestEdits(['foo '], function('s:EditCb'), ['', 'zoo'])
 endfunction
 
+function Test_AddBelowBelowAbove() abort
+	function! s:EditCb() abort
+		execute 'normal! 2o '
+		if !has('nvim') | call listener_flush() | endif
+		execute 'normal! 1GA '
+	endfunction
+	call s:TestEdits([], function('s:EditCb'), ['', '', ''])
+endfunction
+
 function Test_DeleteAndPut() abort
 	function! s:EditCb() abort
 		normal! j2ddP

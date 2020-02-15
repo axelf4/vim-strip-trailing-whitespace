@@ -120,8 +120,7 @@ endfunction
 function s:Remove(key) abort
 	if b:stw_root is s:null | return | endif " Empty tree
 	let b:stw_root = s:Splay(b:stw_root, a:key)
-	" Check if key was in the tree
-	if a:key != b:stw_root.key | return | endif
+	if a:key != b:stw_root.key | return | endif " Not in tree
 	let b:stw_count -= 1
 
 	if b:stw_root.left is s:null
@@ -145,14 +144,14 @@ function s:RemoveRange(min, max) abort
 	let b:stw_root = s:Splay(b:stw_root, a:min)
 
 	if b:stw_root.right is s:null
-		if b:stw_root.key >= a:min && b:stw_root.key <= a:max
+		if a:min <= b:stw_root.key && b:stw_root.key <= a:max
 			if b:stw_root.left isnot s:null | let b:stw_root.left.key += b:stw_root.key | endif
 			let b:stw_root = b:stw_root.left
 			let b:stw_count -= 1
 		endif
 	else
 		" Do modified Hibbard deletion
-		if b:stw_root.key >= a:min && b:stw_root.key <= a:max " Should remove root node but keep left subtree
+		if a:min <= b:stw_root.key && b:stw_root.key <= a:max " Should remove root node but keep left subtree
 			let rootkey = b:stw_root.key
 			let x = b:stw_root.left
 			let b:stw_root = s:Splay(b:stw_root.right, a:max - rootkey + 1)
@@ -166,14 +165,14 @@ function s:RemoveRange(min, max) abort
 		else " Should keep root node and left subtree
 			let b:stw_root.right = s:Splay(b:stw_root.right, a:max - b:stw_root.key + 1)
 			let b:stw_count -= s:NodeCount(b:stw_root.right.left)
-			if b:stw_root.right.key < a:max
-				let b:stw_root.right.left = s:null
-			else
+			if b:stw_root.key + b:stw_root.right.key <= a:max
 				if b:stw_root.right.right isnot s:null
 					let b:stw_root.right.right.key += b:stw_root.right.key
 				endif
 				let b:stw_root.right = b:stw_root.right.right
 				let b:stw_count -= 1
+			else
+				let b:stw_root.right.left = s:null
 			endif
 		endif
 	endif
