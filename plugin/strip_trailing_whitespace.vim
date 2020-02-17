@@ -88,14 +88,11 @@ endfunction
 
 function s:Put(key) abort
 	if b:stw_root is s:null
-		" Splay key to root
-		let b:stw_root = {'key': a:key, 'left': s:null, 'right': s:null}
-		let b:stw_count += 1
+		let [b:stw_root, b:stw_count] = [{'key': a:key, 'left': s:null, 'right': s:null}, 1]
 		return
 	endif
 
-	let b:stw_root = s:Splay(b:stw_root, a:key)
-
+	let b:stw_root = s:Splay(b:stw_root, a:key) " Splay key to root
 	" Insert new node at root
 	let cmp = a:key - b:stw_root.key
 	if cmp < 0
@@ -112,68 +109,44 @@ function s:Put(key) abort
 		let n.left.key -= n.key
 		let b:stw_root = n
 		let b:stw_count += 1
-	else
-		" Duplicate key
 	endif
 endfunction
 
-function s:Remove(key) abort
-	if b:stw_root is s:null | return | endif " Empty tree
-	let b:stw_root = s:Splay(b:stw_root, a:key)
-	if a:key != b:stw_root.key | return | endif " Not in tree
-	let b:stw_count -= 1
-
-	if b:stw_root.left is s:null
-		let b:stw_root = b:stw_root.right
-		if b:stw_root isnot s:null | let b:stw_root.key += a:key | endif
-	else
-		let x = b:stw_root.right
-		let b:stw_root = b:stw_root.left
-		if x isnot s:null | let x.key -= b:stw_root.key | endif
-		call s:Splay(b:stw_root, a:key)
-		let b:stw_root.key += a:key
-		let b:stw_root.right = x
-	endif
-endfunction
-
-" Remove the specified range of keys from the tree.
+" Remove keys in the range [{min}, {max}) from the tree.
 "
-" {min} and {max} are inclusive line numbers defining the range to delete
+" Does modified Hibbard deletion.
 function s:RemoveRange(min, max) abort
 	if b:stw_root is s:null | return | endif
-	let b:stw_root = s:Splay(b:stw_root, a:min)
+	let b:stw_root = s:Splay(b:stw_root, a:min) " Splay around lower bound
+	let right = b:stw_root.right
+	if right isnot s:null | let right.key += b:stw_root.key | endif
+	let b:stw_root.right = s:null
 
-	if b:stw_root.right is s:null
-		if a:min <= b:stw_root.key && b:stw_root.key <= a:max
-			if b:stw_root.left isnot s:null | let b:stw_root.left.key += b:stw_root.key | endif
-			let b:stw_root = b:stw_root.left
+	" Remove root if in range
+	if a:min <= b:stw_root.key && b:stw_root.key < a:max
+		if b:stw_root.left isnot s:null | let b:stw_root.left.key += b:stw_root.key | endif
+		let b:stw_root = b:stw_root.left
+		let b:stw_count -= 1
+	endif
+
+	if right isnot s:null
+		let right = s:Splay(right, a:max) " Splay around upper bound
+		let b:stw_count -= s:NodeCount(right.left)
+		let right.left = s:null
+
+		" If root of right subtree is in range: Remove it
+		if right.key < a:max
+			if right.right isnot s:null | let right.right.key += right.key | endif
+			let right = right.right
 			let b:stw_count -= 1
 		endif
-	else
-		" Do modified Hibbard deletion
-		if a:min <= b:stw_root.key && b:stw_root.key <= a:max " Should remove root node but keep left subtree
-			let rootkey = b:stw_root.key
-			let x = b:stw_root.left
-			let b:stw_root = s:Splay(b:stw_root.right, a:max - rootkey + 1)
-			let b:stw_count -= 1 + s:NodeCount(b:stw_root.left)
-			let b:stw_root.left = x
 
-			if x isnot s:null | let x.key -= b:stw_root.key | endif
-			let b:stw_root.key += rootkey
-
-			call s:Remove(a:max) " Root could still be less than max
-		else " Should keep root node and left subtree
-			let b:stw_root.right = s:Splay(b:stw_root.right, a:max - b:stw_root.key + 1)
-			let b:stw_count -= s:NodeCount(b:stw_root.right.left)
-			if b:stw_root.key + b:stw_root.right.key <= a:max
-				if b:stw_root.right.right isnot s:null
-					let b:stw_root.right.right.key += b:stw_root.right.key
-				endif
-				let b:stw_root.right = b:stw_root.right.right
-				let b:stw_count -= 1
-			else
-				let b:stw_root.right.left = s:null
-			endif
+		if b:stw_root is s:null
+			let b:stw_root = right
+		elseif right isnot s:null
+			let b:stw_root = s:Splay(b:stw_root, 1 / 0) " Move rightmost to root
+			let right.key -= b:stw_root.key
+			let b:stw_root.right = right
 		endif
 	endif
 endfunction
@@ -187,14 +160,12 @@ function StripTrailingWhitespaceListener(bufnr, start, end, added, changes) abor
 	if s:is_stripping || b:stw_count > g:strip_trailing_whitespace_max_lines | return | endif
 
 	" Remove existing in range
-	if a:start < a:end
-		call s:RemoveRange(a:start, a:end - 1)
-	endif
+	if a:start < a:end | call s:RemoveRange(a:start, a:end) | endif
 
 	" Adjust line numbers
-	let b:stw_root = s:Splay(b:stw_root, a:start)
 	if b:stw_root isnot s:null
-		if b:stw_root.key >= a:start
+		let b:stw_root = s:Splay(b:stw_root, a:end)
+		if b:stw_root.key >= a:end
 			let b:stw_root.key += a:added
 			if b:stw_root.left isnot s:null | let b:stw_root.left.key -= a:added | endif
 		elseif b:stw_root.right isnot s:null
@@ -207,6 +178,7 @@ function StripTrailingWhitespaceListener(bufnr, start, end, added, changes) abor
 		let has_trailing_ws = getline(lnum) =~# '\s$'
 		if has_trailing_ws
 			call s:Put(lnum)
+
 			if b:stw_count > g:strip_trailing_whitespace_max_lines
 				" Max count since unable to recommence (might have missed changes)
 				let [b:stw_root, b:stw_count] = [s:null, 1 / 0]
@@ -220,7 +192,6 @@ endfunction
 
 function s:OnBufEnter() abort
 	if exists('b:stw_root') | return | endif
-
 	let [b:stw_root, b:stw_count] = [s:null, 0]
 	if has('nvim')
 		lua vim.api.nvim_buf_attach(0, false, {
@@ -235,14 +206,12 @@ endfunction
 " Recursively strip lines in the specified tree.
 function s:StripTree(n, offset) abort
 	silent execute (a:n.key + a:offset) 'StripTrailingWhitespace'
-
 	if a:n.left isnot s:null | call s:StripTree(a:n.left, a:offset + a:n.key) | endif
 	if a:n.right isnot s:null | call s:StripTree(a:n.right, a:offset + a:n.key) | endif
 endfunction
 
 function s:OnWrite() abort
 	if !get(b:, 'strip_trailing_whitespace_enabled', 1) | return | endif
-
 	if !has('nvim') | call listener_flush() | endif
 
 	let s:is_stripping = 1
