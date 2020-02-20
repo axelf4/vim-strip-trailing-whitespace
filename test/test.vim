@@ -74,3 +74,7 @@ function Test_HandleManyLinesWithTWS() abort
 	endfunction
 	call s:TestEdits(['line '], function('s:EditCb'), extend(['line'], repeat([''], 100)))
 endfunction
+
+function Test_LoadScriptTwice() abort
+	source plugin/strip_trailing_whitespace.vim
+endfunction

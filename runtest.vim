@@ -1,10 +1,10 @@
 let s:has_errors = 0
 
 try
-	let s:scriptdir = fnamemodify(resolve(expand('<sfile>:p')), ':h')
-	execute 'source' s:scriptdir .. '/plugin/strip_trailing_whitespace.vim'
+	execute 'cd' fnamemodify(resolve(expand('<sfile>:p')), ':h')
+	execute 'source' 'plugin/strip_trailing_whitespace.vim'
 
-	let s:testfiles = glob(s:scriptdir .. '/test/*.vim', 1, 1)
+	let s:testfiles = glob('test/*.vim', 1, 1)
 	for s:testfile in s:testfiles
 		execute 'source' s:testfile
 

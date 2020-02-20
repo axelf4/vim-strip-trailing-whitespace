@@ -3,7 +3,7 @@ let s:save_cpo = &cpo | set cpo&vim
 
 " Only load the plugin once
 if exists('g:loaded_strip_trailing_whitespace')
-    finish
+	finish
 endif
 let g:loaded_strip_trailing_whitespace = 1
 
