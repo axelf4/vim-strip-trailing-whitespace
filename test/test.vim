@@ -8,9 +8,7 @@ function s:TestEdits(original, EditCb, expected) abort
 endfunction
 
 function Test_OneLineUnchanged() abort
-	function! s:EditCb() abort
-	endfunction
-	call s:TestEdits(['foo '], function('s:EditCb'), ['foo '])
+	call s:TestEdits(['foo '], {-> 0}, ['foo '])
 endfunction
 
 function Test_OneLineChanged() abort
@@ -18,6 +16,10 @@ function Test_OneLineChanged() abort
 		normal! rf
 	endfunction
 	call s:TestEdits(['line1 '], function('s:EditCb'), ['fine1'])
+endfunction
+
+function Test_AddAbove() abort
+	call s:TestEdits(['line '], {-> execute('normal! O ')}, ['', 'line '])
 endfunction
 
 function Test_AddLineAboveChange() abort
@@ -29,9 +31,7 @@ endfunction
 
 function Test_AddBelowBelowAbove() abort
 	function! s:EditCb() abort
-		execute 'normal! 2o '
-		if !has('nvim') | call listener_flush() | endif
-		execute 'normal! 1GA '
+		execute "normal! 2o \<Esc>ggA "
 	endfunction
 	call s:TestEdits([], function('s:EditCb'), ['', '', ''])
 endfunction
@@ -72,7 +72,7 @@ function Test_HandleManyLinesWithTWS() abort
 	function! s:EditCb() abort
 		execute 'normal! 100o '
 	endfunction
-	call s:TestEdits(['line '], function('s:EditCb'), extend(['line'], repeat([''], 100)))
+	call s:TestEdits(['line '], function('s:EditCb'), ['line'] + repeat([''], 100))
 endfunction
 
 function Test_LoadScriptTwice() abort

@@ -157,34 +157,37 @@ let s:is_stripping = 0
 function StripTrailingWhitespaceListener(bufnr, start, end, added, changes) abort
 	if s:is_stripping || b:stw_count > g:strip_trailing_whitespace_max_lines | return | endif
 
-	" Remove existing in range
-	if a:start < a:end | call s:RemoveRange(a:start, a:end) | endif
+	for change in a:changes
+		let [start, end, added] = [change.lnum, change.end, change.added]
+		" Remove existing in range
+		if start < end | call s:RemoveRange(start, end) | endif
 
-	" Adjust line numbers
-	if b:stw_root isnot v:null
-		let b:stw_root = s:Splay(b:stw_root, a:end)
-		if b:stw_root.key >= a:end
-			let b:stw_root.key += a:added
-			if b:stw_root.left isnot v:null | let b:stw_root.left.key -= a:added | endif
-		elseif b:stw_root.right isnot v:null
-			let b:stw_root.right.key += a:added
-		endif
-	endif
-
-	" (Re-)Add lines in range with trailing whitespace
-	for lnum in range(a:start, a:end + a:added - 1)
-		let has_trailing_ws = getline(lnum) =~# '\s$'
-		if has_trailing_ws
-			call s:Put(lnum)
-
-			if b:stw_count > g:strip_trailing_whitespace_max_lines
-				" Max count since unable to recommence (might have missed changes)
-				let [b:stw_root, b:stw_count] = [v:null, 1 / 0]
-				echohl WarningMsg | echo 'Falling back to stripping entire file: Too many TWS'
-							\ '(use `:let b:strip_trailing_whitespace_enabled = 0` to skip)' | echohl None
-				break
+		" Adjust line numbers
+		if b:stw_root isnot v:null
+			let b:stw_root = s:Splay(b:stw_root, end)
+			if b:stw_root.key >= end
+				let b:stw_root.key += added
+				if b:stw_root.left isnot v:null | let b:stw_root.left.key -= added | endif
+			elseif b:stw_root.right isnot v:null
+				let b:stw_root.right.key += added
 			endif
 		endif
+
+		" (Re-)Add lines in range with trailing whitespace
+		for lnum in range(start, end + added - 1)
+			let has_trailing_ws = getline(lnum) =~# '\s$'
+			if has_trailing_ws
+				call s:Put(lnum)
+
+				if b:stw_count > g:strip_trailing_whitespace_max_lines
+					" Max count since unable to recommence (might have missed changes)
+					let [b:stw_root, b:stw_count] = [v:null, 1 / 0]
+					echohl WarningMsg | echo 'Falling back to stripping entire file: Too many TWS'
+								\ '(use `:let b:strip_trailing_whitespace_enabled = 0` to skip)' | echohl None
+					return
+				endif
+			endif
+		endfor
 	endfor
 endfunction
 
@@ -194,7 +197,8 @@ function s:OnBufEnter() abort
 	if has('nvim')
 		lua vim.api.nvim_buf_attach(0, false, {
 					\ on_lines = function(_, bufnr, _, firstline, lastline, new_lastline)
-					\ vim.api.nvim_call_function("StripTrailingWhitespaceListener", {bufnr, firstline + 1, lastline + 1, new_lastline - lastline, {}})
+					\ vim.api.nvim_call_function("StripTrailingWhitespaceListener", {bufnr, firstline + 1, lastline + 1, new_lastline - lastline,
+					\ {{lnum = firstline + 1, ["end"] = lastline + 1, added = new_lastline - lastline, col = 1}}})
 					\ end, })
 	else
 		call listener_add('StripTrailingWhitespaceListener')
