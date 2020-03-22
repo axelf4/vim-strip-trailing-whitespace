@@ -10,4 +10,4 @@ Vim plugin that removes trailing whitespace
 Achieved by maintaining a set of all edited lines with trailing whitespace,
 backed by a Splay tree where children store line number offsets.
 
-*Vim support: requires Vim 8.2+*
+*Vim support: requires Vim 8.2+ or Neovim 0.5+*
