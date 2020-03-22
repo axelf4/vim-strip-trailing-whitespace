@@ -9,6 +9,6 @@ endif
 all: check
 
 check:
-	$(VIM) --clean $(args) -u runtest.vim
+	$(foreach test,$(wildcard test/*.vim),$(VIM) --clean $(args) -u runtest.vim "$(test)")
 
 .PHONY: all check
