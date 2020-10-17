@@ -195,11 +195,12 @@ function s:OnBufEnter() abort
 	if exists('b:stw_root') | return | endif
 	let [b:stw_root, b:stw_count] = [v:null, 0]
 	if has('nvim')
-		lua vim.api.nvim_buf_attach(0, false, {
+		" Parsing the lua Ex command can fail on broken Vim <8.2.1908 installs
+		execute 'lua vim.api.nvim_buf_attach(0, false, {
 					\ on_lines = function(_, bufnr, _, firstline, lastline, new_lastline)
 					\ vim.api.nvim_call_function("StripTrailingWhitespaceListener", {bufnr, firstline + 1, lastline + 1, new_lastline - lastline,
 					\ {{lnum = firstline + 1, ["end"] = lastline + 1, added = new_lastline - lastline, col = 1}}})
-					\ end, })
+					\ end, })'
 	else
 		call listener_add('StripTrailingWhitespaceListener')
 	endif
