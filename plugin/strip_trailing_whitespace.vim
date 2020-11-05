@@ -192,6 +192,7 @@ function StripTrailingWhitespaceListener(bufnr, start, end, added, changes) abor
 endfunction
 
 function s:OnBufEnter() abort
+	if !get(b:, 'strip_trailing_whitespace_enabled', 1) | return | endif
 	if exists('b:stw_root') | return | endif
 	let [b:stw_root, b:stw_count] = [v:null, 0]
 	if has('nvim')
