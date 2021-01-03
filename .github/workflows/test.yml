@@ -1,0 +1,22 @@
+name: test
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - vim-url: https://github.com/vim/vim-appimage/releases/download/v8.2.2282/GVim-v8.2.2282.glibc2.15-x86_64.AppImage
+            vim-flags: --not-a-term
+          - vim-url: https://github.com/neovim/neovim/releases/download/nightly/nvim.appimage
+            vim-flags: --headless
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install Vim
+      run: |
+        curl -L --output vim ${{ matrix.vim-url }}
+        chmod +x vim
+    - name: Run tests
+      run: make test VIM=./vim VIMFLAGS=${{ matrix.vim-flags }}

@@ -1,5 +1,5 @@
 # vim-strip-trailing-whitespace
-![](https://github.com/axelf4/vim-strip-trailing-whitespace/workflows/CI/badge.svg)
+![](https://github.com/axelf4/vim-strip-trailing-whitespace/workflows/test/badge.svg)
 
 Vim plugin that removes trailing whitespace
  * **from modified lines:** Should not introduce extraneous changes into the diff, even when editing faulty files.

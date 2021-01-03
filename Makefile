@@ -1,14 +1,14 @@
-VIM = vim
+VIM := vim
+unexport VIM
+VIMFLAGS := $(if $(filter nvim,$(VIM)),--headless,--not-a-term)
 
-ifeq ($(VIM),vim)
-	args = --not-a-term
-else ifeq ($(VIM),nvim)
-	args = --headless
-endif
+all: test
 
-all: check
+TESTS := $(wildcard test/test*.vim)
 
-check:
-	$(foreach test,$(wildcard test/*.vim),$(VIM) --clean $(args) -u runtest.vim "$(test)")
+$(TESTS):
+	$(VIM) --clean $(VIMFLAGS) -u runtest.vim "$@"
 
-.PHONY: all check
+test: $(TESTS)
+
+.PHONY: all test $(TESTS)

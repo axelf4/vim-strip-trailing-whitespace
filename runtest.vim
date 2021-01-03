@@ -6,7 +6,9 @@ try
 	source plugin/strip_trailing_whitespace.vim
 
 	source %
-	let s:tests = map(split(execute('function /^Test_'), "\n"), {_, v -> matchstr(v, 'function \zs\k\+\ze()')})
+	" Query list of functions matching ^Test_
+	let s:tests = map(split(execute('function /^Test_'), "\n"), 'matchstr(v:val, ''^function \zs\k\+\ze()'')')
+
 	for s:test_function in s:tests
 		let v:errors = []
 		echo 'Test' s:test_function
@@ -14,15 +16,14 @@ try
 			execute 'call' s:test_function '()'
 		catch
 			call add(v:errors, "Uncaught exception in test: " .. v:exception .. " at " .. v:throwpoint)
-		finally
-			if !empty(v:errors)
-				echo s:testfile .. ':1:Error'
-				for s:error in v:errors
-					echo s:error
-				endfor
-				let s:has_errors = 1
-			endif
 		endtry
+		if !empty(v:errors)
+			echo s:testfile .. ':1:Error'
+			for s:error in v:errors
+				echo s:error
+			endfor
+			let s:has_errors = 1
+		endif
 	endfor
 catch
 	echo v:exception
