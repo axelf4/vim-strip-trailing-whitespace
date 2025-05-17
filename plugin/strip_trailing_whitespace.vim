@@ -197,10 +197,12 @@ function s:OnBufEnter() abort
 	if has('nvim')
 		" Parsing the lua Ex command can fail on broken Vim <8.2.1908 installs
 		execute 'lua vim.api.nvim_buf_attach(0, false, {
-					\ on_lines = function(_, bufnr, _, firstline, lastline, new_lastline)
-					\ vim.api.nvim_call_function("StripTrailingWhitespaceListener", {bufnr, firstline + 1, lastline + 1, new_lastline - lastline,
-					\ {{lnum = firstline + 1, ["end"] = lastline + 1, added = new_lastline - lastline, col = 1}}})
-					\ end, })'
+					\ on_lines = function(_, buf, _, firstline, lastline, new_lastline)
+					\ local args = {buf, firstline + 1, lastline + 1, new_lastline - lastline,
+					\ {{lnum = firstline + 1, ["end"] = lastline + 1, added = new_lastline - lastline, col = 1}}}
+					\ vim.api.nvim_buf_call(buf, function()
+					\ vim.api.nvim_call_function("StripTrailingWhitespaceListener", args)
+					\ end) end, })'
 	else
 		call listener_add('StripTrailingWhitespaceListener')
 	endif
