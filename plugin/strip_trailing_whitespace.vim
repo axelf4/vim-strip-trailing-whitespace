@@ -1,13 +1,9 @@
 " Vim plugin that removes trailing whitespace from modified lines on save
 let s:save_cpo = &cpo | set cpo&vim
 
-" Only load the plugin once
-if exists('g:loaded_strip_trailing_whitespace')
-	finish
-endif
+if exists('g:loaded_strip_trailing_whitespace') | finish | endif
 let g:loaded_strip_trailing_whitespace = 1
 
-" Strip trailing whitespace
 command -bar -range=% StripTrailingWhitespace keeppatterns <line1>,<line2>substitute/\s\+$//e
 
 if !exists('g:strip_trailing_whitespace_max_lines')
@@ -45,10 +41,10 @@ let s:NodeCount = {n -> n is v:null ? 0 : 1 + s:NodeCount(n.left) + s:NodeCount(
 " does not, the last node along the search path for the key is splayed to the
 " root.
 function s:Splay(n, key) abort
-	let [n, key] = [a:n, a:key]
+	let n = a:n
 	if n is v:null | return v:null | endif
 
-	let key -= n.key
+	let key = a:key - n.key
 	if key < 0
 		if n.left is v:null | return n | endif " Key is not in tree, so we are done
 
@@ -79,116 +75,118 @@ function s:Splay(n, key) abort
 		endif
 
 		return n.right is v:null ? n : s:RotateLeft(n)
-	else
+	endif
+	return n
+endfunction
+
+function s:Put(root, key) abort
+	if a:root is v:null | return {'key': a:key, 'left': v:null, 'right': v:null} | endif
+	let root = s:Splay(a:root, a:key) " Splay key to root
+	" Insert new node at root
+	let cmp = a:key - root.key
+	if cmp < 0
+		let n = {'key': a:key, 'left': root.left, 'right': root}
+		let root.left = v:null
+		if n.left isnot v:null | let n.left.key += root.key - n.key | endif
+		let n.right.key -= n.key
+		return n
+	elseif cmp > 0
+		let n = {'key': a:key, 'left': root, 'right': root.right}
+		let root.right = v:null
+		if n.right isnot v:null | let n.right.key += root.key - n.key | endif
+		let n.left.key -= n.key
 		return n
 	endif
+	return root
 endfunction
 
-function s:Put(key) abort
-	if b:stw_root is v:null
-		let [b:stw_root, b:stw_count] = [{'key': a:key, 'left': v:null, 'right': v:null}, 1]
-		return
-	endif
-
-	let b:stw_root = s:Splay(b:stw_root, a:key) " Splay key to root
-	" Insert new node at root
-	let cmp = a:key - b:stw_root.key
-	if cmp < 0
-		let n = {'key': a:key, 'left': b:stw_root.left, 'right': b:stw_root}
-		let b:stw_root.left = v:null
-		if n.left isnot v:null | let n.left.key += b:stw_root.key - n.key | endif
-		let n.right.key -= n.key
-		let b:stw_root = n
-		let b:stw_count += 1
-	elseif cmp > 0
-		let n = {'key': a:key, 'left': b:stw_root, 'right': b:stw_root.right}
-		let b:stw_root.right = v:null
-		if n.right isnot v:null | let n.right.key += b:stw_root.key - n.key | endif
-		let n.left.key -= n.key
-		let b:stw_root = n
-		let b:stw_count += 1
-	endif
-endfunction
-
-" Remove keys in the range [{min}, {max}) from the tree.
+" Remove keys in the range [{min}, {max}) from {root}.
 "
 " Does modified Hibbard deletion.
-function s:RemoveRange(min, max) abort
-	if b:stw_root is v:null | return | endif
-	let b:stw_root = s:Splay(b:stw_root, a:min) " Splay around lower bound
-	let right = b:stw_root.right
-	if right isnot v:null | let right.key += b:stw_root.key | endif
-	let b:stw_root.right = v:null
+function s:RemoveRange(root, min, max) abort
+	if a:root is v:null | return [v:null, 0] | endif
+	let root = s:Splay(a:root, a:min) " Splay around lower bound
+	let cnt = 0
+	let right = root.right
+	if right isnot v:null | let right.key += root.key | endif
+	let root.right = v:null
 
 	" Remove root if in range
-	if a:min <= b:stw_root.key && b:stw_root.key < a:max
-		if b:stw_root.left isnot v:null | let b:stw_root.left.key += b:stw_root.key | endif
-		let b:stw_root = b:stw_root.left
-		let b:stw_count -= 1
+	if a:min <= root.key && root.key < a:max
+		if root.left isnot v:null | let root.left.key += root.key | endif
+		let root = root.left
+		let cnt += 1
 	endif
 
 	if right isnot v:null
 		let right = s:Splay(right, a:max) " Splay around upper bound
-		let b:stw_count -= s:NodeCount(right.left)
+		let cnt += s:NodeCount(right.left)
 		let right.left = v:null
 
 		" If root of right subtree is in range: Remove it
 		if right.key < a:max
 			if right.right isnot v:null | let right.right.key += right.key | endif
 			let right = right.right
-			let b:stw_count -= 1
+			let cnt += 1
 		endif
 
-		if b:stw_root is v:null
-			let b:stw_root = right
+		if root is v:null
+			let root = right
 		elseif right isnot v:null
-			let b:stw_root = s:Splay(b:stw_root, 1 / 0) " Move rightmost to root
-			let right.key -= b:stw_root.key
-			let b:stw_root.right = right
+			let root = s:Splay(root, 1 / 0) " Move rightmost to root
+			let right.key -= root.key
+			let root.right = right
 		endif
 	endif
+
+	return [root, cnt]
 endfunction
 
-" Whether in the process of deleting whitespace.
-"
-" Ignore changes while that is the case.
+" Whether currently deleting whitespace. (Ignore changes while that is the case.)
 let s:is_stripping = 0
 
 function StripTrailingWhitespaceListener(bufnr, start, end, added, changes) abort
-	if s:is_stripping || b:stw_count > g:strip_trailing_whitespace_max_lines | return | endif
+	let [root, cnt] = [getbufvar(a:bufnr, 'stw_root'), getbufvar(a:bufnr, 'stw_count')]
+	if s:is_stripping || cnt > g:strip_trailing_whitespace_max_lines | return | endif
 
 	for change in a:changes
-		let [start, end, added] = [change.lnum, change.end, change.added]
+		let [lnum, end, added] = [change.lnum, change.end, change.added]
 		" Remove existing in range
-		if start < end | call s:RemoveRange(start, end) | endif
+		if lnum < end
+			let [root, num_removed] = s:RemoveRange(root, lnum, end)
+			let cnt -= num_removed
+		endif
 
 		" Adjust line numbers
-		if b:stw_root isnot v:null
-			let b:stw_root = s:Splay(b:stw_root, end)
-			if b:stw_root.key >= end
-				let b:stw_root.key += added
-				if b:stw_root.left isnot v:null | let b:stw_root.left.key -= added | endif
-			elseif b:stw_root.right isnot v:null
-				let b:stw_root.right.key += added
+		if root isnot v:null
+			let root = s:Splay(root, end)
+			if root.key >= end
+				let root.key += added
+				if root.left isnot v:null | let root.left.key -= added | endif
+			elseif root.right isnot v:null
+				let root.right.key += added
 			endif
 		endif
 
 		" (Re-)Add lines in range with trailing whitespace
-		for lnum in range(start, end + added - 1)
-			let has_trailing_ws = getline(lnum) =~# '\s$'
-			if has_trailing_ws
-				call s:Put(lnum)
+		for i in range(lnum, end + added - 1)
+			if getbufoneline(a:bufnr, i) !~# '\s$' | continue | endif
+			let new_root = s:Put(root, i)
+			let cnt += new_root isnot root
+			let root = new_root
 
-				if b:stw_count > g:strip_trailing_whitespace_max_lines
-					" Max count since unable to recommence (might have missed changes)
-					let [b:stw_root, b:stw_count] = [v:null, 1 / 0]
-					echohl WarningMsg | echo 'Falling back to stripping entire file: Too many TWS'
-								\ '(use `:let b:strip_trailing_whitespace_enabled = 0` to skip)' | echohl None
-					return
-				endif
+			if cnt > g:strip_trailing_whitespace_max_lines
+				" Max count since unable to recommence (may have missed changes)
+				call setbufvar(a:bufnr, 'stw_root', v:null)
+				call setbufvar(a:bufnr, 'stw_count', 1 / 0)
+				echohl WarningMsg | echo 'Falling back to stripping entire file: Too many TWS'
+							\ '(use `:let b:strip_trailing_whitespace_enabled = 0` to skip)' | echohl None
+				return
 			endif
 		endfor
 	endfor
+	call setbufvar(a:bufnr, 'stw_root', root)
+	call setbufvar(a:bufnr, 'stw_count', cnt)
 endfunction
 
 function s:OnBufEnter() abort

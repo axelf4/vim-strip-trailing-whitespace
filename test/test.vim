@@ -78,3 +78,21 @@ endfunction
 function Test_LoadScriptTwice() abort
 	source plugin/strip_trailing_whitespace.vim
 endfunction
+
+function Test_ChangeNoncurrentBuffer() abort
+ 	function! s:EditCb() abort
+		noautocmd enew
+		try
+			if has('nvim')
+				call nvim_buf_set_lines(bufnr('#'), 0, -1, v:true, ['bar '])
+			else
+				call bufload('#')
+				call setbufline('#', 1, 'bar ')
+				call listener_flush('#')
+			endif
+		finally
+			bwipeout!
+		endtry
+ 	endfunction
+ 	call s:TestEdits(['foo'], function('s:EditCb'), ['bar'])
+endfunction
