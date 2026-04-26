@@ -13,7 +13,7 @@ jobs:
           - vim-url: https://github.com/neovim/neovim/releases/download/v0.12.2/nvim-linux-x86_64.appimage
             vim-flags: --headless
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v6
     - name: Install Vim
       run: |
         sudo apt-get install libfuse2t64
