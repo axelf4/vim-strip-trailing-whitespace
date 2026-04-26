@@ -8,14 +8,15 @@ jobs:
     strategy:
       matrix:
         include:
-          - vim-url: https://github.com/vim/vim-appimage/releases/download/v8.2.2282/GVim-v8.2.2282.glibc2.15-x86_64.AppImage
+          - vim-url: https://github.com/vim/vim-appimage/releases/download/v9.2.0392/Vim-v9.2.0392.glibc2.34-x86_64.AppImage
             vim-flags: --not-a-term
-          - vim-url: https://github.com/neovim/neovim/releases/download/nightly/nvim.appimage
+          - vim-url: https://github.com/neovim/neovim/releases/download/v0.12.2/nvim-linux-x86_64.appimage
             vim-flags: --headless
     steps:
     - uses: actions/checkout@v2
     - name: Install Vim
       run: |
+        sudo apt-get install libfuse2t64
         curl -L --output vim ${{ matrix.vim-url }}
         chmod +x vim
     - name: Run tests
