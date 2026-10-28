@@ -170,7 +170,7 @@ function StripTrailingWhitespaceListener(bufnr, start, end, added, changes) abor
 
 		" (Re-)Add lines in range with trailing whitespace
 		for i in range(lnum, end + added - 1)
-			if getbufoneline(a:bufnr, i) !~# '\s$' | continue | endif
+			if getbufline(a:bufnr, i)[0] !~# '\s$' | continue | endif
 			let new_root = s:Put(root, i)
 			let cnt += new_root isnot root
 			let root = new_root
